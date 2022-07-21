@@ -1,4 +1,4 @@
-package com.ibm.geo.user.userregistration;
+package com.ibm.geo.user;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

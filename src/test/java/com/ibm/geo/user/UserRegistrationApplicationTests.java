@@ -1,4 +1,4 @@
-package com.ibm.geo.user.userregistration;
+package com.ibm.geo.user;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
