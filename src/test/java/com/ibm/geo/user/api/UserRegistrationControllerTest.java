@@ -28,10 +28,10 @@ public class UserRegistrationControllerTest {
 
     @Test
     public void testGetEmployeeById() {
-        User user = new User("name","password","24.48.0.1");
+        User user = new User("name","12345$aB","24.48.0.1");
         Mono<Either<UserRegistrationError,UserRegistrationSuccess>> employeeMono = Mono.just(Either.right(new UserRegistrationSuccess(UUID.randomUUID(),"success message")));
 
-        when(userRegistrationService.registerUserMap(user)).thenReturn(employeeMono);
+        when(userRegistrationService.registerUser(user)).thenReturn(employeeMono);
 
         webTestClient.post()
                 .uri(UserRegistrationConstants.API_BASE+UserRegistrationConstants.REGISTER_USER_ENDPOINT)
@@ -42,8 +42,6 @@ public class UserRegistrationControllerTest {
                 .expectBody(UserRegistrationSuccess.class)
                 .consumeWith(System.out::println);
 
-
-//                .value(employee1 -> employee.getAge(), equalTo(23));
     }
 
     @Test
@@ -51,7 +49,7 @@ public class UserRegistrationControllerTest {
         User user = new User("dfsd","13$56Ba","24.48.0.1");
         Mono<Either<UserRegistrationError,UserRegistrationSuccess>> employeeMono = Mono.just(Either.right(new UserRegistrationSuccess(UUID.randomUUID(),"success message")));
 
-        when(userRegistrationService.registerUserMap(user)).thenReturn(employeeMono);
+        when(userRegistrationService.registerUser(user)).thenReturn(employeeMono);
 
         webTestClient.post()
                 .uri(UserRegistrationConstants.API_BASE+UserRegistrationConstants.REGISTER_USER_ENDPOINT)
@@ -62,26 +60,23 @@ public class UserRegistrationControllerTest {
                 .expectBody()
                 .consumeWith(System.out::println);
 
-
-        //                .value(employee1 -> employee.getAge(), equalTo(23));
     }
 
     @Test
     public void testGetEmployeeById_error() {
-        User user = new User("name","password","100.100.100.100");
-        Mono<Either<UserRegistrationError,UserRegistrationSuccess>> employeeMono = Mono.just(Either.right(new UserRegistrationSuccess(UUID.randomUUID(),"success message")));
+        User user = new User("name","12345$aB","100.100.100.100");
+        Mono<Either<UserRegistrationError,UserRegistrationSuccess>> employeeMono = Mono.just(Either.left(new UserRegistrationError("success message")));
 
-        when(userRegistrationService.registerUserMap(user)).thenReturn(employeeMono);
+        when(userRegistrationService.registerUser(user)).thenReturn(employeeMono);
 
         webTestClient.post()
                 .uri(UserRegistrationConstants.API_BASE+UserRegistrationConstants.REGISTER_USER_ENDPOINT)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(Mono.just(user), User.class)
                 .exchange()
-                .expectStatus().isOk()
-
+                .expectStatus().is5xxServerError()
                 .expectBody(UserRegistrationError.class);
-        //                .value(employee1 -> employee.getAge(), equalTo(23));
+
     }
 
 

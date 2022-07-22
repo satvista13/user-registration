@@ -1,49 +1,80 @@
 package com.ibm.geo.user.service;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import com.ibm.geo.user.client.GeoLocationResponse;
+import com.ibm.geo.user.dto.GeoLocationResponse;
 import com.ibm.geo.user.dto.User;
 import com.ibm.geo.user.dto.UserRegistrationError;
 import com.ibm.geo.user.dto.UserRegistrationSuccess;
 import io.vavr.control.Either;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.mockito.Mock;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
-@SpringBootTest
+@TestInstance(Lifecycle.PER_CLASS)
 class UserRegistrationServiceTest {
 
-	@Autowired
 	UserRegistrationService userRegistrationService;
 
+	@Mock
+	GeoLocationService geoLocationService;
+
+	@BeforeAll
+	void setUp() {
+		geoLocationService = mock(GeoLocationService.class);
+		userRegistrationService = new UserRegistrationService(geoLocationService);
+	}
+
+
 	@Test
-	void testUser(){
-		User user = new User("name","password","24.48.0.1");
-		GeoLocationResponse block = userRegistrationService.registerUser(user).block();
-		System.out.println(block.toString());
+	void registerUser_validIP_success() {
+
+		// Given
+		GeoLocationResponse geoLocationResponse = new GeoLocationResponse();
+		geoLocationResponse.setCountry("Canada");
+		geoLocationResponse.setCity("Montreal");
+		geoLocationResponse.setMessage(null);
+		when(geoLocationService.getByIp("24.48.0.1")).thenReturn(Mono.just(geoLocationResponse));
+		User user = new User("name", "password", "24.48.0.1");
+
+		// When
+		Mono<Either<UserRegistrationError, UserRegistrationSuccess>> mono = userRegistrationService.registerUser(user);
+
+		// Then
+		StepVerifier.create(mono)
+				.assertNext(either -> {
+					assertTrue(either.isRight());
+					assertNotNull(either.get().getUserId());
+					assertNotNull(either.get().getMessage());
+				})
+				.verifyComplete();
+
 	}
 
 	@Test
-	void testUserMap(){
-		User user = new User("name","password","24.48.0.1");
-		Either<UserRegistrationError, UserRegistrationSuccess> block = userRegistrationService.registerUserMap(user).block();
-		System.out.println(block.isRight());
-		System.out.println(block.get());
-	}
+	void registerUser_invalidIP_failure() {
+		// Given
+		GeoLocationResponse geoLocationResponse = new GeoLocationResponse();
+		geoLocationResponse.setMessage("error message");
+		when(geoLocationService.getByIp("100.100.100.100")).thenReturn(Mono.just(geoLocationResponse));
+		User user = new User("name", "password", "100.100.100.100");
 
-	@Test
-	void testUser_error(){
-		User user = new User("name","password","100.100.100.100");
-		GeoLocationResponse block = userRegistrationService.registerUser(user).block();
-		System.out.println(block==null);
-	}
+		// When
+		Mono<Either<UserRegistrationError, UserRegistrationSuccess>> mono = userRegistrationService.registerUser(user);
 
-	@Test
-	void testUser_errorMap(){
-		User user = new User("name","password","100.100.100.100");
-		Either<UserRegistrationError, UserRegistrationSuccess> block = userRegistrationService.registerUserMap(user).block();
-		System.out.println(block.isLeft());
-		System.out.println(block.getLeft());
+		// Then
+		StepVerifier.create(mono)
+				.assertNext(either -> {
+					assertTrue(either.isLeft());
+					assertNotNull(either.getLeft().getError());
+				})
+				.verifyComplete();
 	}
 }

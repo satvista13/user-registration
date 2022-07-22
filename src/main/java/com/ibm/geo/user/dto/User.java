@@ -1,12 +1,17 @@
 package com.ibm.geo.user.dto;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO modelling the Request Body from User Registration API
+ * Does Javax Validation on required fields returning 400
+ * in case of validation failure
+ * @author Sathish Raghupathy
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

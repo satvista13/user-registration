@@ -1,16 +1,21 @@
 package com.ibm.geo.user.service;
 
-import com.ibm.geo.user.client.GeoLocationResponse;
+import static com.ibm.geo.user.service.UserRegistrationUtil.mapToResult;
+
+import com.ibm.geo.user.dto.GeoLocationResponse;
 import com.ibm.geo.user.dto.User;
 import com.ibm.geo.user.dto.UserRegistrationError;
 import com.ibm.geo.user.dto.UserRegistrationSuccess;
 import io.vavr.control.Either;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+/**
+ * Service to help register a given user
+ * @author Sathish Raghupathy
+ */
 @Service
 public class UserRegistrationService {
 
@@ -20,39 +25,15 @@ public class UserRegistrationService {
 		this.geoLocationService = geoLocationService;
 	}
 
-	static Predicate<GeoLocationResponse> validGeoLocation = geoLocationResponse ->
-			geoLocationResponse.getMessage()==null;
-
-	static Predicate<GeoLocationResponse> locatedInCanada = geoLocationResponse ->
-			geoLocationResponse.getCountry().equalsIgnoreCase("canada");
-
-	public Function<GeoLocationResponse,UserRegistrationSuccess> resultMapperForUser(User user){
-              return geoLocationResponse -> new UserRegistrationSuccess(UUID.randomUUID(),
-					  "User "+user.getName() +" registered successfully in city: "+geoLocationResponse.getCity());
-	}
-
-	 Either<UserRegistrationError,UserRegistrationSuccess> mapToResult(User user,GeoLocationResponse geoLocationResponse)  {
-		if(validGeoLocation.and(locatedInCanada).test(geoLocationResponse))
-			return Either.right(resultMapperForUser(user).apply(geoLocationResponse));
-		else
-			return Either.left( new UserRegistrationError("User is not eligible to register"));
-	};
-
-	static Function<GeoLocationResponse, Either<UserRegistrationError,UserRegistrationSuccess>> mapToResult = geoLocationResponse -> {
-		if(validGeoLocation.and(locatedInCanada).test(geoLocationResponse))
-			return Either.right(new UserRegistrationSuccess(UUID.randomUUID(),"success message"));
-		else
-			return Either.left( new UserRegistrationError("User is not eligible to register"));
-	};
-
-	public Mono<GeoLocationResponse> registerUser(User user){
-		return geoLocationService.getByIp(user.getIp())
-				.filter(validGeoLocation.and(locatedInCanada));
 
 
-	}
-
-	public Mono<Either<UserRegistrationError,UserRegistrationSuccess>> registerUserMap(User user){
+	/**
+	 * Method which accepts a validate User and returns a Mono of the User Registration Result
+	 * Retrieves the GeoLocationResponse and maps it to required result
+	 * @param user User
+	 * @return Mono<Either<UserRegistrationError,UserRegistrationSuccess>>
+	 */
+	public Mono<Either<UserRegistrationError,UserRegistrationSuccess>> registerUser(User user){
 		return geoLocationService.getByIp(user.getIp())
 				.map(geolocationResponse ->mapToResult(user,geolocationResponse));
 
